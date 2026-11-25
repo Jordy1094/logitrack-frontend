@@ -2,5 +2,5 @@
 // se reemplaza aqui antes de compilar (Capitulo 8).
 export const environment = {
   production: true,
-  apiUrl: 'https://logitrack-backend.onrender.com'
+  apiUrl: 'https://logitrack-backend-u8n0.onrender.com'
 };
