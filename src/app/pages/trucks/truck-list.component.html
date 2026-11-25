@@ -1,0 +1,251 @@
+<!-- Figura 8: lista de camiones con buscador, estado (semaforo) y proximo mantenimiento -->
+<div class="d-flex flex-wrap align-items-center gap-2 mb-4">
+  <h1 class="lt-titulo me-auto">Camiones</h1>
+  <div class="input-group" style="width: min(280px, 100%)">
+    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+    <input class="form-control" placeholder="Buscar por placa..." aria-label="Buscar por placa"
+           [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)">
+  </div>
+  <select class="form-select" style="width: auto" aria-label="Filtrar por estado" [(ngModel)]="filtroEstado" (ngModelChange)="cargar()">
+    <option value="">Todos los estados</option>
+    <option value="DISPONIBLE">Disponible (Verde)</option>
+    <option value="EN_RUTA">En ruta (Amarillo)</option>
+    <option value="EN_MANTENIMIENTO">En mantenimiento (Rojo)</option>
+  </select>
+  @if (esAdmin()) {
+    <button class="btn btn-dark px-3" type="button" (click)="abrirNuevo()"><i class="bi bi-plus-lg me-1"></i>Nuevo camión</button>
+  }
+</div>
+
+@if (error()) {
+  <div class="alert alert-danger d-flex align-items-center gap-2">
+    <i class="bi bi-exclamation-triangle-fill"></i>{{ error() }}
+    <button class="btn btn-sm btn-outline-danger ms-auto" (click)="cargar()">Reintentar</button>
+  </div>
+}
+
+<div class="lt-panel">
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead><tr>
+        <th>Placa</th><th>Marca / Modelo</th><th>Estado</th><th>Próx. mantenimiento</th><th>Acciones</th>
+      </tr></thead>
+      <tbody>
+        @if (cargando()) {
+          <tr><td colspan="5" class="text-center py-4"><span class="spinner-border spinner-border-sm me-2"></span>Cargando...</td></tr>
+        } @else {
+          @for (c of visibles(); track c.id) {
+            <tr>
+              <td>
+                <span class="fw-semibold">{{ c.placa }}</span>
+                @if (c.conNovedad) {
+                  <div class="small text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>{{ c.descripcionNovedad }}</div>
+                }
+              </td>
+              <td>{{ c.marca }} {{ c.modelo }}<div class="small text-muted">{{ c.anio }} · {{ c.capacidad | number: '1.0-1' }} t</div></td>
+              <td><app-estado-badge [estado]="c.estado" /></td>
+              <td class="text-nowrap">
+                @if (mantenimientoDe(c.id).enTaller; as m) {
+                  En taller desde {{ m.fechaIngreso | date: 'dd/MM/yyyy' }}<div class="small text-muted">{{ m.taller }}</div>
+                } @else {
+                  @if (mantenimientoDe(c.id).programado; as m) {
+                    {{ m.fechaProgramada | date: 'dd/MM/yyyy' }}<div class="small text-muted">{{ m.tipo === 'PREVENTIVO' ? 'Preventivo' : 'Correctivo' }} · {{ m.taller }}</div>
+                  } @else {
+                    <span class="text-muted">Sin programar</span>
+                  }
+                }
+              </td>
+              <td class="text-nowrap">
+                @if (esAdmin()) {
+                  <button class="btn btn-sm btn-outline-dark me-1" (click)="abrirEdicion(c)">Editar</button>
+                }
+                @if (mantenimientoDe(c.id).enTaller; as m) {
+                  <button class="btn btn-sm btn-outline-dark me-1" (click)="cerrarMantenimiento(m)">Cerrar mant.</button>
+                } @else {
+                  @if (mantenimientoDe(c.id).programado; as m) {
+                    <button class="btn btn-sm btn-outline-dark me-1" (click)="registrarIngreso(m)">Ingreso al taller</button>
+                  } @else {
+                    <button class="btn btn-sm btn-outline-dark me-1" (click)="abrirMantenimiento(c)">Mantenimiento</button>
+                  }
+                }
+                <button class="btn btn-sm btn-outline-secondary me-1" (click)="verHistorial(c)" title="Historial de mantenimientos"
+                        aria-label="Historial de mantenimientos"><i class="bi bi-clock-history"></i></button>
+                @if (c.estado === 'DISPONIBLE') {
+                  <button class="btn btn-sm btn-outline-secondary me-1" (click)="asignarRuta(c)" title="Asignar ruta"
+                          aria-label="Asignar ruta"><i class="bi bi-signpost-split"></i></button>
+                }
+                @if (esAdmin()) {
+                  <button class="btn btn-sm btn-outline-danger" (click)="darDeBaja(c)" title="Dar de baja" aria-label="Dar de baja">
+                    <i class="bi bi-trash"></i></button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="text-center text-muted py-4">No hay camiones que coincidan con la búsqueda.</td></tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="small text-muted mt-2">{{ visibles().length }} de {{ camiones().length }} camiones</div>
+
+<!-- Modal: registrar / editar camion (Tabla 14) -->
+@if (modal() === 'camion') {
+  <div class="lt-backdrop" (click)="cerrarModal()">
+    <div class="lt-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+      <form [formGroup]="formCamion" (ngSubmit)="guardarCamion()" novalidate>
+        <div class="p-4 border-bottom d-flex align-items-center">
+          <h2 class="h5 fw-bold mb-0">{{ seleccionado() ? 'Editar camión' : 'Nuevo camión' }}</h2>
+          <button type="button" class="btn-close ms-auto" (click)="cerrarModal()" aria-label="Cerrar"></button>
+        </div>
+        <div class="p-4 row g-3">
+          <div class="col-md-6">
+            <label class="form-label" for="placa">Placa</label>
+            <input id="placa" class="form-control text-uppercase" formControlName="placa" placeholder="ABC-123" maxlength="7"
+                   (blur)="normalizarPlaca()"
+                   [class.is-invalid]="(formCamion.controls.placa.touched && formCamion.controls.placa.invalid) || erroresServidor()['placa']">
+            <div class="invalid-feedback">{{ erroresServidor()['placa'] || 'Formato ABC-123 (tres letras, guion y tres números).' }}</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="marca">Marca</label>
+            <input id="marca" class="form-control" formControlName="marca"
+                   [class.is-invalid]="formCamion.controls.marca.touched && formCamion.controls.marca.invalid">
+            <div class="invalid-feedback">La marca es obligatoria.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="modelo">Modelo</label>
+            <input id="modelo" class="form-control" formControlName="modelo"
+                   [class.is-invalid]="formCamion.controls.modelo.touched && formCamion.controls.modelo.invalid">
+            <div class="invalid-feedback">El modelo es obligatorio.</div>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label" for="anio">Año</label>
+            <input id="anio" type="number" class="form-control" formControlName="anio"
+                   [class.is-invalid]="formCamion.controls.anio.touched && formCamion.controls.anio.invalid">
+            <div class="invalid-feedback">Año no válido.</div>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label" for="capacidad">Capacidad (t)</label>
+            <input id="capacidad" type="number" step="0.5" class="form-control" formControlName="capacidad"
+                   [class.is-invalid]="formCamion.controls.capacidad.touched && formCamion.controls.capacidad.invalid">
+            <div class="invalid-feedback">Mayor a 0.</div>
+          </div>
+          @if (!seleccionado()) {
+            <div class="col-12 small text-muted"><i class="bi bi-info-circle me-1"></i>El camión se registra con estado Disponible (Verde).</div>
+          }
+        </div>
+        <div class="p-3 border-top d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-outline-dark" (click)="cerrarModal()">Cancelar</button>
+          <button type="submit" class="btn btn-dark px-4" [disabled]="guardando()">
+            @if (guardando()) { <span class="spinner-border spinner-border-sm me-1"></span> } Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Modal: programar mantenimiento (HU-07, Tabla 14) -->
+@if (modal() === 'mantenimiento') { @if (seleccionado(); as camion) {
+  <div class="lt-backdrop" (click)="cerrarModal()">
+    <div class="lt-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+      <form [formGroup]="formMantenimiento" (ngSubmit)="guardarMantenimiento()" novalidate>
+        <div class="p-4 border-bottom d-flex align-items-center">
+          <h2 class="h5 fw-bold mb-0">Programar mantenimiento · {{ camion.placa }}</h2>
+          <button type="button" class="btn-close ms-auto" (click)="cerrarModal()" aria-label="Cerrar"></button>
+        </div>
+        <div class="p-4 row g-3">
+          <div class="col-md-6">
+            <label class="form-label" for="tipo">Tipo</label>
+            <select id="tipo" class="form-select" formControlName="tipo">
+              <option value="PREVENTIVO">Preventivo</option>
+              <option value="CORRECTIVO">Correctivo</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="fecha">Fecha programada</label>
+            <input id="fecha" type="date" class="form-control" formControlName="fechaProgramada" [min]="hoy"
+                   [class.is-invalid]="formMantenimiento.controls.fechaProgramada.touched && formMantenimiento.controls.fechaProgramada.invalid">
+            <div class="invalid-feedback">La fecha es obligatoria.</div>
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="motivo">Motivo</label>
+            <textarea id="motivo" class="form-control" rows="3" formControlName="motivo" placeholder="Describa el trabajo a realizar..."
+                      [class.is-invalid]="formMantenimiento.controls.motivo.touched && formMantenimiento.controls.motivo.invalid"></textarea>
+            <div class="invalid-feedback">El motivo es obligatorio.</div>
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="taller">Taller</label>
+            <input id="taller" class="form-control" formControlName="taller" placeholder="Nombre del taller"
+                   [class.is-invalid]="formMantenimiento.controls.taller.touched && formMantenimiento.controls.taller.invalid">
+            <div class="invalid-feedback">El taller es obligatorio.</div>
+          </div>
+        </div>
+        <div class="p-3 border-top d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-outline-dark" (click)="cerrarModal()">Cancelar</button>
+          <button type="submit" class="btn btn-dark px-4" [disabled]="guardando()">
+            @if (guardando()) { <span class="spinner-border spinner-border-sm me-1"></span> } Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+} }
+
+<!-- Modal: historial de mantenimientos con ingreso y cierre (HU-08, HU-09) -->
+@if (modal() === 'historial') { @if (seleccionado(); as camion) {
+  <div class="lt-backdrop" (click)="cerrarModal()">
+    <div class="lt-modal ancho" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+      <div class="p-4 border-bottom d-flex align-items-center gap-2">
+        <h2 class="h5 fw-bold mb-0">Historial de mantenimientos · {{ camion.placa }}</h2>
+        <button type="button" class="btn-close ms-auto" (click)="cerrarModal()" aria-label="Cerrar"></button>
+      </div>
+      <div class="p-3">
+        @if (cargandoHistorial()) {
+          <div class="text-center py-4"><span class="spinner-border spinner-border-sm me-2"></span>Cargando...</div>
+        } @else {
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead class="table-light"><tr>
+                <th>Tipo</th><th>Programado</th><th>Motivo / Taller</th><th>Ingreso</th><th>Cierre</th><th>Estado</th><th></th>
+              </tr></thead>
+              <tbody>
+                @for (m of historial(); track m.id) {
+                  <tr>
+                    <td>{{ m.tipo === 'PREVENTIVO' ? 'Preventivo' : 'Correctivo' }}</td>
+                    <td class="text-nowrap">{{ m.fechaProgramada | date: 'dd/MM/yyyy' }}</td>
+                    <td>{{ m.motivo }}<div class="small text-muted">{{ m.taller }}</div></td>
+                    <td class="text-nowrap">{{ m.fechaIngreso ? (m.fechaIngreso | date: 'dd/MM/yyyy') : '—' }}</td>
+                    <td class="text-nowrap">{{ m.fechaCierre ? (m.fechaCierre | date: 'dd/MM/yyyy') : '—' }}</td>
+                    <td>
+                      <span class="badge"
+                            [class.text-bg-secondary]="m.estado === 'PROGRAMADO'" [class.text-bg-danger]="m.estado === 'EN_TALLER'"
+                            [class.text-bg-success]="m.estado === 'CERRADO'">
+                        {{ m.estado === 'PROGRAMADO' ? 'Programado' : m.estado === 'EN_TALLER' ? 'En taller' : 'Cerrado' }}
+                      </span>
+                    </td>
+                    <td class="text-end text-nowrap">
+                      @if (m.estado === 'PROGRAMADO') {
+                        <button class="btn btn-sm btn-outline-danger" (click)="registrarIngreso(m)">Ingreso al taller</button>
+                      }
+                      @if (m.estado === 'EN_TALLER') {
+                        <button class="btn btn-sm btn-outline-success" (click)="cerrarMantenimiento(m)">Cerrar</button>
+                      }
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr><td colspan="7" class="text-center text-muted py-4">Este camión aún no tiene mantenimientos registrados.</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+      <div class="p-3 border-top d-flex justify-content-between">
+        <button class="btn btn-outline-dark" (click)="abrirMantenimiento(camion)"><i class="bi bi-plus-lg me-1"></i>Programar otro</button>
+        <button class="btn btn-outline-secondary" (click)="cerrarModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+} }

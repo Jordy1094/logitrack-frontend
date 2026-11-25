@@ -1,0 +1,72 @@
+<!-- Figura 9: formulario de asignacion de ruta con mensaje de conflicto -->
+<h1 class="lt-titulo mb-4">Asignar nueva ruta</h1>
+
+<div class="lt-form-card p-4" style="max-width: 640px">
+  <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label" for="origen">Origen *</label>
+        <input id="origen" class="form-control" formControlName="origen" placeholder="Lima" [class.is-invalid]="invalido('origen')">
+        <div class="invalid-feedback">El origen es obligatorio.</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="destino">Destino *</label>
+        <input id="destino" class="form-control" formControlName="destino" placeholder="Arequipa" [class.is-invalid]="invalido('destino')">
+        <div class="invalid-feedback">El destino es obligatorio.</div>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label" for="fecha">Fecha y hora de salida *</label>
+        <input id="fecha" type="datetime-local" class="form-control" formControlName="fechaSalida" [min]="minimo"
+               [class.is-invalid]="invalido('fechaSalida')">
+        <div class="invalid-feedback">
+          {{ erroresServidor()['fechaSalida'] || (form.controls.fechaSalida.hasError('pasado') ? 'La fecha de salida no puede estar en el pasado.' : 'La fecha de salida es obligatoria.') }}
+        </div>
+      </div>
+      <div class="col-md-6 d-none d-md-block"></div>
+
+      <div class="col-12">
+        <label class="form-label" for="camion">Camión * <span class="fw-normal text-muted">(solo disponibles)</span></label>
+        <select id="camion" class="form-select" formControlName="camionId"
+                [class.is-invalid]="invalido('camionId') || conflictoCamion()">
+          <option [ngValue]="null" disabled>{{ cargando() ? 'Cargando...' : 'Seleccione un camión disponible' }}</option>
+          @for (c of camiones(); track c.id) {
+            <option [ngValue]="c.id">{{ c.placa }} · {{ c.marca }} {{ c.modelo }}</option>
+          }
+        </select>
+        <!-- HU-05 CA2 / Figura 9: el motivo se muestra debajo del campo y los datos se conservan -->
+        @if (conflictoCamion()) {
+          <div class="campo-error" role="alert"><i class="bi bi-x-lg me-1"></i>{{ conflictoCamion() }}</div>
+        } @else if (invalido('camionId')) {
+          <div class="campo-error">Seleccione un camión.</div>
+        } @else if (!cargando() && camiones().length === 0) {
+          <div class="campo-error">No hay camiones disponibles en este momento.</div>
+        }
+      </div>
+
+      <div class="col-12">
+        <label class="form-label" for="conductor">Conductor *</label>
+        <select id="conductor" class="form-select" formControlName="conductorId"
+                [class.is-invalid]="invalido('conductorId') || conflictoConductor()">
+          <option [ngValue]="null" disabled>{{ cargando() ? 'Cargando...' : 'Seleccione un conductor disponible' }}</option>
+          @for (c of conductores(); track c.id) {
+            <option [ngValue]="c.id">{{ c.nombres }} {{ c.apellidos }} · DNI {{ c.dni }}</option>
+          }
+        </select>
+        @if (conflictoConductor()) {
+          <div class="campo-error" role="alert"><i class="bi bi-x-lg me-1"></i>{{ conflictoConductor() }}</div>
+        } @else if (invalido('conductorId')) {
+          <div class="campo-error">Seleccione un conductor.</div>
+        }
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2 mt-4">
+      <a class="btn btn-outline-dark px-4" routerLink="/dashboard">Cancelar</a>
+      <button type="submit" class="btn btn-dark px-4" [disabled]="guardando() || cargando()">
+        @if (guardando()) { <span class="spinner-border spinner-border-sm me-1"></span>Asignando... }
+        @else { Asignar ruta }
+      </button>
+    </div>
+  </form>
+</div>

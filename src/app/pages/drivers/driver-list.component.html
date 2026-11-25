@@ -1,0 +1,105 @@
+<!-- Lista secundaria: reutiliza el diseno de la lista de camiones (Tabla 7) -->
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+  <h1 class="lt-titulo me-auto">Conductores</h1>
+  <div class="input-group" style="width: min(280px, 100%)">
+    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+    <input class="form-control" placeholder="Buscar por nombre o DNI..." aria-label="Buscar por nombre o DNI"
+           [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)">
+  </div>
+  @if (esAdmin()) {
+    <button class="btn btn-dark px-3" type="button" (click)="abrirForm()"><i class="bi bi-plus-lg me-1"></i>Nuevo conductor</button>
+  }
+</div>
+<div class="form-check form-switch mb-3">
+  <input class="form-check-input" type="checkbox" id="soloDisp" [(ngModel)]="soloDisponibles" (ngModelChange)="cargar()">
+  <label class="form-check-label" for="soloDisp">Mostrar solo conductores sin ruta activa</label>
+</div>
+
+@if (error()) {
+  <div class="alert alert-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error() }}</div>
+}
+
+<div class="lt-panel">
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead><tr>
+        <th>DNI</th><th>Nombres y apellidos</th><th class="d-none d-md-table-cell">N.° de licencia</th>
+        <th class="d-none d-md-table-cell">Teléfono</th><th>Disponibilidad</th>
+      </tr></thead>
+      <tbody>
+        @if (cargando()) {
+          <tr><td colspan="5" class="text-center py-4"><span class="spinner-border spinner-border-sm me-2"></span>Cargando...</td></tr>
+        } @else {
+          @for (c of visibles(); track c.id) {
+            <tr>
+              <td class="fw-semibold">{{ c.dni }}</td>
+              <td>{{ c.nombres }} {{ c.apellidos }}</td>
+              <td class="d-none d-md-table-cell">{{ c.nroLicencia }}</td>
+              <td class="d-none d-md-table-cell">{{ c.telefono }}</td>
+              <td>
+                @if (estaDisponible(c)) {
+                  <span class="estado estado-DISPONIBLE"><span class="punto"></span>Disponible</span>
+                } @else {
+                  <span class="estado estado-EN_RUTA"><span class="punto"></span>En ruta</span>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="text-center text-muted py-4">No hay conductores que coincidan.</td></tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@if (mostrarForm()) {
+  <div class="lt-backdrop" (click)="mostrarForm.set(false)">
+    <div class="lt-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+      <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+        <div class="p-4 border-bottom d-flex align-items-center">
+          <h2 class="h5 fw-bold mb-0">Nuevo conductor</h2>
+          <button type="button" class="btn-close ms-auto" (click)="mostrarForm.set(false)" aria-label="Cerrar"></button>
+        </div>
+        <div class="p-4 row g-3">
+          <div class="col-md-6">
+            <label class="form-label" for="dni">DNI</label>
+            <input id="dni" class="form-control" formControlName="dni" maxlength="8" inputmode="numeric"
+                   [class.is-invalid]="(form.controls.dni.touched && form.controls.dni.invalid) || erroresServidor()['dni']">
+            <div class="invalid-feedback">{{ erroresServidor()['dni'] || 'El DNI debe tener 8 dígitos.' }}</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="licencia">N.° de licencia</label>
+            <input id="licencia" class="form-control" formControlName="nroLicencia"
+                   [class.is-invalid]="form.controls.nroLicencia.touched && form.controls.nroLicencia.invalid">
+            <div class="invalid-feedback">La licencia es obligatoria.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="nombres">Nombres</label>
+            <input id="nombres" class="form-control" formControlName="nombres"
+                   [class.is-invalid]="form.controls.nombres.touched && form.controls.nombres.invalid">
+            <div class="invalid-feedback">Los nombres son obligatorios.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="apellidos">Apellidos</label>
+            <input id="apellidos" class="form-control" formControlName="apellidos"
+                   [class.is-invalid]="form.controls.apellidos.touched && form.controls.apellidos.invalid">
+            <div class="invalid-feedback">Los apellidos son obligatorios.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="telefono">Teléfono</label>
+            <input id="telefono" class="form-control" formControlName="telefono" maxlength="9" inputmode="numeric"
+                   [class.is-invalid]="form.controls.telefono.touched && form.controls.telefono.invalid">
+            <div class="invalid-feedback">Celular de 9 dígitos.</div>
+          </div>
+        </div>
+        <div class="p-3 border-top d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-outline-dark" (click)="mostrarForm.set(false)">Cancelar</button>
+          <button type="submit" class="btn btn-dark px-4" [disabled]="guardando()">
+            @if (guardando()) { <span class="spinner-border spinner-border-sm me-1"></span> } Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

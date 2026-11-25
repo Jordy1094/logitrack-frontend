@@ -1,0 +1,63 @@
+<!-- Figura 10: el conductor ve solo su ruta asignada y reporta el estado del vehiculo -->
+<div class="mx-auto" style="max-width: 560px">
+  <h1 class="lt-titulo mb-3">Mi ruta asignada</h1>
+
+  @if (cargando()) {
+    <div class="text-center py-5 text-muted"><div class="spinner-border mb-2"></div><div>Buscando tu ruta...</div></div>
+  } @else if (error()) {
+    <div class="alert alert-danger d-flex align-items-center gap-2">
+      <i class="bi bi-exclamation-triangle-fill"></i>{{ error() }}
+      <button class="btn btn-sm btn-outline-danger ms-auto" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else {
+    @if (ruta(); as r) {
+      <div class="lt-ruta-card mb-4">
+        <div class="fs-5 fw-bold mb-2">{{ r.origen }} → {{ r.destino }}</div>
+        <div class="mb-1">Salida: {{ r.fechaSalida | date: 'dd/MM/yyyy HH:mm' }}</div>
+        <div class="mb-3">Camión: {{ r.camion.placa }} · {{ r.camion.marca }} {{ r.camion.modelo }}</div>
+        <app-estado-badge estado="EN_RUTA" />
+      </div>
+
+      <!-- Reporte del estado del vehiculo (HU-12, Tabla 14) -->
+      <h2 class="h5 fw-bold mb-3">Reportar estado del vehículo</h2>
+      <form [formGroup]="form" (ngSubmit)="reportar()" novalidate>
+        <div class="mb-3">
+          <label class="form-label" for="estadoVehiculo">Estado</label>
+          <select id="estadoVehiculo" class="form-select form-select-lg fs-6" formControlName="conNovedad">
+            <option [ngValue]="false">Sin novedad</option>
+            <option [ngValue]="true">Con novedad</option>
+          </select>
+        </div>
+        <div class="mb-4">
+          <label class="form-label" for="desc">Descripción</label>
+          <textarea id="desc" class="form-control" rows="4" formControlName="descripcion"
+                    [placeholder]="form.controls.conNovedad.value ? 'Ruido en frenos...' : 'Opcional cuando no hay novedad'"
+                    [class.is-invalid]="form.controls.descripcion.touched && form.controls.descripcion.invalid"></textarea>
+          <div class="invalid-feedback">La descripción es obligatoria cuando hay novedad.</div>
+        </div>
+        <button class="btn btn-dark btn-lg fs-6 w-100" type="submit" [disabled]="enviando()">
+          @if (enviando()) { <span class="spinner-border spinner-border-sm me-1"></span> } Enviar reporte
+        </button>
+      </form>
+
+      @if (ultimoReporte(); as u) {
+        <div class="lt-ruta-card mt-3 small">
+          <div class="fw-semibold mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i>Último reporte enviado · {{ u.hora | date: 'HH:mm' }}</div>
+          @if (u.conNovedad) {
+            <div><span class="text-danger fw-semibold">Con novedad:</span> “{{ u.descripcion }}”</div>
+          } @else {
+            <div>Sin novedad{{ u.descripcion ? ': “' + u.descripcion + '”' : '' }}</div>
+          }
+          <div class="text-muted mt-1">El supervisor lo ve en las novedades del Dashboard.</div>
+        </div>
+      }
+    } @else {
+      <div class="lt-ruta-card text-center py-5">
+        <i class="bi bi-calendar-x fs-1 text-muted"></i>
+        <p class="fw-semibold mt-2 mb-1">{{ sinRuta() }}</p>
+        <p class="text-muted small mb-3">Cuando el supervisor te asigne una ruta, aparecerá aquí.</p>
+        <button class="btn btn-sm btn-outline-dark" (click)="cargar()"><i class="bi bi-arrow-clockwise me-1"></i>Actualizar</button>
+      </div>
+    }
+  }
+</div>

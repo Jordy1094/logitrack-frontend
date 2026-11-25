@@ -1,0 +1,42 @@
+<!-- Figura 6: la misma pantalla de acceso para los tres roles -->
+<div class="lt-login">
+  <div class="lt-form-card">
+    <div class="text-center mb-4">
+      <div class="lt-logo" aria-hidden="true"><i class="bi bi-truck"></i></div>
+      <h1 class="h3 fw-bold mb-1">LogiTrack</h1>
+      <p class="text-muted mb-0">Gestión de flotas · TransRápido</p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="ingresar()" novalidate>
+      <div class="mb-3">
+        <label for="correo" class="form-label">Correo electrónico</label>
+        <input id="correo" type="email" class="form-control form-control-lg fs-6" formControlName="correo" autocomplete="username"
+               placeholder="usuario@transrapido.pe"
+               [class.is-invalid]="form.controls.correo.touched && form.controls.correo.invalid">
+        <div class="invalid-feedback">
+          @if (form.controls.correo.hasError('required')) { El correo es obligatorio. }
+          @else { Ingresa un correo con formato válido. }
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label for="contrasena" class="form-label">Contraseña</label>
+        <input id="contrasena" type="password" class="form-control form-control-lg fs-6" formControlName="contrasena"
+               autocomplete="current-password"
+               [class.is-invalid]="error() || (form.controls.contrasena.touched && form.controls.contrasena.invalid)"
+               (input)="error.set(null)">
+        <!-- HU-01 CA2: el mensaje aparece debajo del campo, sin recargar la pagina -->
+        @if (error()) {
+          <div class="campo-error" role="alert"><i class="bi bi-exclamation-triangle-fill me-1"></i>{{ error() }}</div>
+        } @else if (form.controls.contrasena.touched && form.controls.contrasena.invalid) {
+          <div class="campo-error">La contraseña es obligatoria.</div>
+        }
+      </div>
+
+      <button type="submit" class="btn btn-dark btn-lg fs-6 w-100" [disabled]="form.invalid || cargando()">
+        @if (cargando()) { <span class="spinner-border spinner-border-sm me-2"></span>Ingresando... }
+        @else { Ingresar }
+      </button>
+    </form>
+  </div>
+</div>

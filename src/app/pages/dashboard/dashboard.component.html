@@ -1,0 +1,92 @@
+@if (esConductor()) {
+  <!-- Tabla 8: para el conductor, /dashboard muestra su ruta asignada (Figura 10) -->
+  <app-driver-home />
+} @else {
+  <!-- Figura 7: resumen de la flota, rutas en curso y novedades -->
+  <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
+    <h1 class="lt-titulo">Resumen de la flota</h1>
+    <a class="btn btn-dark ms-auto px-4" routerLink="/rutas/nueva"><i class="bi bi-plus-lg me-1"></i>Asignar ruta</a>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-danger d-flex align-items-center gap-2">
+      <i class="bi bi-exclamation-triangle-fill"></i>{{ error() }}
+      <button class="btn btn-sm btn-outline-danger ms-auto" (click)="cargar()">Reintentar</button>
+    </div>
+  }
+
+  @if (cargando() && camiones().length === 0) {
+    <div class="text-center py-5 text-muted"><div class="spinner-border mb-2"></div><div>Cargando la flota...</div></div>
+  } @else {
+    <!-- Semaforo: color + texto + numero (Tabla 10 y 11) -->
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="kpi kpi-verde">
+          <div class="etiqueta"><span class="punto"></span>Disponibles</div>
+          <div class="valor">{{ conteo().disponibles }}</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="kpi kpi-amarillo">
+          <div class="etiqueta"><span class="punto"></span>En ruta</div>
+          <div class="valor">{{ conteo().enRuta }}</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="kpi kpi-rojo">
+          <div class="etiqueta"><span class="punto"></span>En mantenimiento</div>
+          <div class="valor">{{ conteo().enMantenimiento }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rutas en curso con la opcion de finalizarlas (HU-06) -->
+    <h2 class="lt-seccion">Rutas en curso</h2>
+    <div class="lt-panel">
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead><tr>
+            <th>Camión</th><th>Conductor</th><th>Origen → Destino</th><th>Salida</th><th>Acción</th>
+          </tr></thead>
+          <tbody>
+            @for (ruta of rutasEnCurso(); track ruta.id) {
+              <tr>
+                <td>{{ ruta.camion.placa }}</td>
+                <td>{{ ruta.conductor.nombres }} {{ ruta.conductor.apellidos }}</td>
+                <td>{{ ruta.origen }} → {{ ruta.destino }}</td>
+                <td class="text-nowrap">{{ ruta.fechaSalida | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td>
+                  <button class="btn btn-sm btn-outline-dark" type="button" (click)="finalizar(ruta)"
+                          [disabled]="finalizandoId() === ruta.id">
+                    @if (finalizandoId() === ruta.id) { <span class="spinner-border spinner-border-sm"></span> }
+                    @else { Finalizar }
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5" class="text-center text-muted py-4">No hay rutas en curso en este momento.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Novedades reportadas por los conductores (HU-12) -->
+    <h2 class="lt-seccion">Novedades reportadas por conductores</h2>
+    <div class="lt-panel">
+      @for (n of novedades(); track n.camion.id) {
+        <div class="lt-novedad">
+          <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+          <div class="flex-grow-1">
+            <span class="fw-semibold">{{ n.camion.placa }}</span>
+            · “{{ n.camion.descripcionNovedad }}”
+            @if (n.conductor) { · {{ n.conductor }} }
+          </div>
+          <a class="btn btn-sm btn-outline-dark px-3" [routerLink]="['/camiones']" [queryParams]="{ placa: n.camion.placa }">Ver</a>
+        </div>
+      } @empty {
+        <div class="lt-novedad text-muted">Sin novedades reportadas.</div>
+      }
+    </div>
+  }
+}
