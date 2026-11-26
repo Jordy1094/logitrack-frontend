@@ -4,14 +4,14 @@
   <div class="input-group" style="width: min(280px, 100%)">
     <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
     <input class="form-control" placeholder="Buscar por nombre o DNI..." aria-label="Buscar por nombre o DNI"
-           [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)">
+           [ngModel]="busqueda()" (ngModelChange)="buscar($event)">
   </div>
   @if (esAdmin()) {
     <button class="btn btn-dark px-3" type="button" (click)="abrirForm()"><i class="bi bi-plus-lg me-1"></i>Nuevo conductor</button>
   }
 </div>
 <div class="form-check form-switch mb-3">
-  <input class="form-check-input" type="checkbox" id="soloDisp" [(ngModel)]="soloDisponibles" (ngModelChange)="cargar()">
+  <input class="form-check-input" type="checkbox" id="soloDisp" [(ngModel)]="soloDisponibles" (ngModelChange)="filtrar()">
   <label class="form-check-label" for="soloDisp">Mostrar solo conductores sin ruta activa</label>
 </div>
 
@@ -25,10 +25,11 @@
       <thead><tr>
         <th>DNI</th><th>Nombres y apellidos</th><th class="d-none d-md-table-cell">N.° de licencia</th>
         <th class="d-none d-md-table-cell">Teléfono</th><th>Disponibilidad</th>
+        @if (esAdmin()) { <th>Acciones</th> }
       </tr></thead>
       <tbody>
         @if (cargando()) {
-          <tr><td colspan="5" class="text-center py-4"><span class="spinner-border spinner-border-sm me-2"></span>Cargando...</td></tr>
+          <tr><td [attr.colspan]="esAdmin() ? 6 : 5" class="text-center py-4"><span class="spinner-border spinner-border-sm me-2"></span>Cargando...</td></tr>
         } @else {
           @for (c of visibles(); track c.id) {
             <tr>
@@ -43,22 +44,31 @@
                   <span class="estado estado-EN_RUTA"><span class="punto"></span>En ruta</span>
                 }
               </td>
+              @if (esAdmin()) {
+                <td class="text-nowrap">
+                  <button class="btn btn-sm btn-outline-dark me-1" (click)="abrirEdicion(c)">Editar</button>
+                  <button class="btn btn-sm btn-outline-danger" (click)="darDeBaja(c)" title="Dar de baja" aria-label="Dar de baja">
+                    <i class="bi bi-trash"></i></button>
+                </td>
+              }
             </tr>
           } @empty {
-            <tr><td colspan="5" class="text-center text-muted py-4">No hay conductores que coincidan.</td></tr>
+            <tr><td [attr.colspan]="esAdmin() ? 6 : 5" class="text-center text-muted py-4">No hay conductores que coincidan.</td></tr>
           }
         }
       </tbody>
     </table>
   </div>
 </div>
+<app-paginador [pagina]="pagina()" [tamano]="tamano" [totalElementos]="totalElementos()" [totalPaginas]="totalPaginas()"
+               etiqueta="conductores" (cambiar)="irAPagina($event)" />
 
 @if (mostrarForm()) {
   <div class="lt-backdrop" (click)="mostrarForm.set(false)">
     <div class="lt-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
       <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
         <div class="p-4 border-bottom d-flex align-items-center">
-          <h2 class="h5 fw-bold mb-0">Nuevo conductor</h2>
+          <h2 class="h5 fw-bold mb-0">{{ seleccionado() ? 'Editar conductor' : 'Nuevo conductor' }}</h2>
           <button type="button" class="btn-close ms-auto" (click)="mostrarForm.set(false)" aria-label="Cerrar"></button>
         </div>
         <div class="p-4 row g-3">

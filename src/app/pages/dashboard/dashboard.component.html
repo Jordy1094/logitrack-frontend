@@ -49,7 +49,7 @@
             <th>Camión</th><th>Conductor</th><th>Origen → Destino</th><th>Salida</th><th>Acción</th>
           </tr></thead>
           <tbody>
-            @for (ruta of rutasEnCurso(); track ruta.id) {
+            @for (ruta of rutasTabla(); track ruta.id) {
               <tr>
                 <td>{{ ruta.camion.placa }}</td>
                 <td>{{ ruta.conductor.nombres }} {{ ruta.conductor.apellidos }}</td>
@@ -70,6 +70,8 @@
         </table>
       </div>
     </div>
+    <app-paginador [pagina]="paginaRutas()" [tamano]="tamanoRutas" [totalElementos]="totalRutas()" [totalPaginas]="totalPaginasRutas()"
+                   etiqueta="rutas en curso" (cambiar)="irAPaginaRutas($event)" />
 
     <!-- Novedades reportadas por los conductores (HU-12) -->
     <h2 class="lt-seccion">Novedades reportadas por conductores</h2>

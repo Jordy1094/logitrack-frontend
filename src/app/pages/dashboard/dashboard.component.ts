@@ -8,6 +8,7 @@ import { ToastService } from '../../core/toast.service';
 import { mensajeDeError } from '../../core/api-error';
 import { Camion, ResumenDashboard, Ruta } from '../../core/models';
 import { DriverHomeComponent } from '../driver-home/driver-home.component';
+import { PaginadorComponent } from '../../shared/paginador.component';
 
 // DashboardComponent (Tabla 7, Figura 7, HU-06, HU-10, RF-14): tarjetas por estado, rutas en
 // curso con la opcion de finalizarlas y novedades reportadas por los conductores. Para el
@@ -15,7 +16,7 @@ import { DriverHomeComponent } from '../driver-home/driver-home.component';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [DatePipe, RouterLink, DriverHomeComponent],
+  imports: [DatePipe, RouterLink, DriverHomeComponent, PaginadorComponent],
   templateUrl: './dashboard.component.html'
 })
 export class DashboardComponent implements OnInit {
@@ -29,6 +30,13 @@ export class DashboardComponent implements OnInit {
   readonly rutasEnCurso = signal<Ruta[]>([]);
   readonly resumen = signal<ResumenDashboard | null>(null);
   readonly finalizandoId = signal<number | null>(null);
+
+  // Tabla de rutas en curso por paginas de 5 (RNF-17).
+  readonly rutasTabla = signal<Ruta[]>([]);
+  readonly tamanoRutas = 5;
+  readonly paginaRutas = signal(0);
+  readonly totalRutas = signal(0);
+  readonly totalPaginasRutas = signal(0);
 
   // Las tarjetas usan el resumen del backend (GET /api/dashboard/resumen) cuando el rol
   // lo permite (Administrador); para el Supervisor se calculan con la lista de camiones.
@@ -73,12 +81,31 @@ export class DashboardComponent implements OnInit {
         this.rutasEnCurso.set(rutas);
         this.resumen.set(resumen);
         this.cargando.set(false);
+        this.cargarRutas();
       },
       error: (err) => {
         this.error.set(mensajeDeError(err));
         this.cargando.set(false);
       }
     });
+  }
+
+  cargarRutas(): void {
+    this.fleet.paginaRutas('EN_CURSO', this.paginaRutas(), this.tamanoRutas).subscribe({
+      next: p => {
+        // Si se finalizo la ultima ruta de la ultima pagina, se vuelve a la anterior.
+        if (p.contenido.length === 0 && p.pagina > 0) { this.paginaRutas.set(p.pagina - 1); this.cargarRutas(); return; }
+        this.rutasTabla.set(p.contenido);
+        this.totalRutas.set(p.totalElementos);
+        this.totalPaginasRutas.set(p.totalPaginas);
+      },
+      error: err => this.error.set(mensajeDeError(err))
+    });
+  }
+
+  irAPaginaRutas(p: number): void {
+    this.paginaRutas.set(p);
+    this.cargarRutas();
   }
 
   // HU-06: finalizar la ruta devuelve el camion a Verde y el conductor queda disponible.

@@ -11,6 +11,7 @@ import { ToastService } from '../../core/toast.service';
 import { erroresPorCampo, mensajeDeError } from '../../core/api-error';
 import { Camion, EstadoCamion, Mantenimiento } from '../../core/models';
 import { EstadoBadgeComponent } from '../../shared/estado-badge.component';
+import { PaginadorComponent } from '../../shared/paginador.component';
 
 type Modal = 'ninguno' | 'camion' | 'mantenimiento' | 'historial';
 
@@ -25,7 +26,7 @@ const SIN_MANTENIMIENTO: MantenimientoVigente = { enTaller: null, programado: nu
 @Component({
   selector: 'app-truck-list',
   standalone: true,
-  imports: [DatePipe, DecimalPipe, FormsModule, ReactiveFormsModule, EstadoBadgeComponent],
+  imports: [DatePipe, DecimalPipe, FormsModule, ReactiveFormsModule, EstadoBadgeComponent, PaginadorComponent],
   templateUrl: './truck-list.component.html'
 })
 export class TruckListComponent implements OnInit {
@@ -44,13 +45,16 @@ export class TruckListComponent implements OnInit {
   readonly error = signal<string | null>(null);
   readonly guardando = signal(false);
 
-  // Filtros (RF-05): el estado se filtra en el servidor; la placa se busca en la lista cargada.
+  // Filtros (RF-05) y paginacion (RNF-17): el servidor filtra por estado y placa y devuelve
+  // una pagina de 10 camiones; la tabla muestra solo esa pagina.
   filtroEstado: EstadoCamion | '' = '';
   readonly busqueda = signal('');
-  readonly visibles = computed(() => {
-    const texto = this.busqueda().trim().toUpperCase();
-    return texto ? this.camiones().filter(c => c.placa.includes(texto)) : this.camiones();
-  });
+  readonly visibles = computed(() => this.camiones());
+  readonly tamano = 10;
+  readonly pagina = signal(0);
+  readonly totalElementos = signal(0);
+  readonly totalPaginas = signal(0);
+  private esperaBusqueda?: ReturnType<typeof setTimeout>;
 
   readonly modal = signal<Modal>('ninguno');
   readonly seleccionado = signal<Camion | null>(null);
@@ -85,10 +89,35 @@ export class TruckListComponent implements OnInit {
   cargar(): void {
     this.cargando.set(true);
     this.error.set(null);
-    this.fleet.listarCamiones({ estado: this.filtroEstado }).subscribe({
-      next: lista => { this.camiones.set(lista); this.cargando.set(false); this.cargarMantenimientos(lista); },
+    this.fleet.paginaCamiones({ estado: this.filtroEstado, placa: this.busqueda() }, this.pagina(), this.tamano).subscribe({
+      next: p => {
+        // Si se dio de baja el ultimo camion de la ultima pagina, se vuelve a la anterior.
+        if (p.contenido.length === 0 && p.pagina > 0) { this.pagina.set(p.pagina - 1); this.cargar(); return; }
+        this.camiones.set(p.contenido);
+        this.totalElementos.set(p.totalElementos);
+        this.totalPaginas.set(p.totalPaginas);
+        this.cargando.set(false);
+        this.cargarMantenimientos(p.contenido);
+      },
       error: err => { this.error.set(mensajeDeError(err)); this.cargando.set(false); }
     });
+  }
+
+  // Cambiar el filtro o la busqueda vuelve a la primera pagina.
+  filtrar(): void {
+    this.pagina.set(0);
+    this.cargar();
+  }
+
+  buscar(texto: string): void {
+    this.busqueda.set(texto);
+    clearTimeout(this.esperaBusqueda);
+    this.esperaBusqueda = setTimeout(() => this.filtrar(), 300);
+  }
+
+  irAPagina(p: number): void {
+    this.pagina.set(p);
+    this.cargar();
   }
 
   // "Proximo mantenimiento" de cada camion (Figura 8), a partir de su historial (HU-09).

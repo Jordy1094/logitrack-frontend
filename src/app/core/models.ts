@@ -64,6 +64,15 @@ export interface MantenimientoRequest {
   tipo: TipoMantenimiento; fechaProgramada: string; motivo: string; taller: string;
 }
 
+// RNF-17: respuesta de las listas por paginas (GET ...?pagina=0&tamano=10).
+export interface Pagina<T> {
+  contenido: T[];
+  pagina: number;
+  tamano: number;
+  totalElementos: number;
+  totalPaginas: number;
+}
+
 export interface ReporteRequest { conNovedad: boolean; descripcion: string | null; }
 
 export interface ResumenDashboard {

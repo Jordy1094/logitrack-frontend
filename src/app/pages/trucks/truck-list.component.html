@@ -4,9 +4,9 @@
   <div class="input-group" style="width: min(280px, 100%)">
     <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
     <input class="form-control" placeholder="Buscar por placa..." aria-label="Buscar por placa"
-           [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)">
+           [ngModel]="busqueda()" (ngModelChange)="buscar($event)">
   </div>
-  <select class="form-select" style="width: auto" aria-label="Filtrar por estado" [(ngModel)]="filtroEstado" (ngModelChange)="cargar()">
+  <select class="form-select" style="width: auto" aria-label="Filtrar por estado" [(ngModel)]="filtroEstado" (ngModelChange)="filtrar()">
     <option value="">Todos los estados</option>
     <option value="DISPONIBLE">Disponible (Verde)</option>
     <option value="EN_RUTA">En ruta (Amarillo)</option>
@@ -88,7 +88,8 @@
     </table>
   </div>
 </div>
-<div class="small text-muted mt-2">{{ visibles().length }} de {{ camiones().length }} camiones</div>
+<app-paginador [pagina]="pagina()" [tamano]="tamano" [totalElementos]="totalElementos()" [totalPaginas]="totalPaginas()"
+               etiqueta="camiones" (cambiar)="irAPagina($event)" />
 
 <!-- Modal: registrar / editar camion (Tabla 14) -->
 @if (modal() === 'camion') {
