@@ -54,6 +54,9 @@ export class DashboardComponent implements OnInit {
 
   readonly esConductor = computed(() => this.auth.rol() === 'CONDUCTOR');
 
+  // Mejora: total de camiones registrados, visible junto al titulo del resumen.
+  readonly totalCamiones = computed(() => this.camiones().length);
+
   // Cada novedad muestra la placa, la descripcion y, si el camion esta en ruta, el conductor.
   readonly novedades = computed(() => this.camiones()
     .filter(c => c.conNovedad)

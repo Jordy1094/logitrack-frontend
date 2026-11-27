@@ -5,6 +5,8 @@
   <!-- Figura 7: resumen de la flota, rutas en curso y novedades -->
   <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
     <h1 class="lt-titulo">Resumen de la flota</h1>
+    <!-- Mejora: total de camiones registrados -->
+    <span class="badge text-bg-light border">{{ totalCamiones() }} camiones en total</span>
     <a class="btn btn-dark ms-auto px-4" routerLink="/rutas/nueva"><i class="bi bi-plus-lg me-1"></i>Asignar ruta</a>
   </div>
 
