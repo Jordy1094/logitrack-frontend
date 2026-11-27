@@ -111,6 +111,7 @@ export class DashboardComponent implements OnInit {
     this.cargarRutas();
   }
 
+  
   // HU-06: finalizar la ruta devuelve el camion a Verde y el conductor queda disponible.
   finalizar(ruta: Ruta): void {
     if (!confirm(`¿Finalizar la ruta ${ruta.origen} → ${ruta.destino} del camión ${ruta.camion.placa}?`)) {

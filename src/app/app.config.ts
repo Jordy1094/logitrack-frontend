@@ -17,3 +17,4 @@ export const appConfig: ApplicationConfig = {
     { provide: LOCALE_ID, useValue: 'es-PE' }
   ]
 };
+
