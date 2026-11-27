@@ -18,6 +18,8 @@ export class LoginComponent {
 
   readonly cargando = signal(false);
   readonly error = signal<string | null>(null);
+  // Mejora: permite ver la contraseña mientras se escribe, antes de iniciar sesion.
+  readonly mostrarContrasena = signal(false);
 
   readonly form = this.fb.nonNullable.group({
     correo: ['', [Validators.required, Validators.email]],
