@@ -1,6 +1,8 @@
 <!-- Lista secundaria: reutiliza el diseno de la lista de camiones (Tabla 7) -->
 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-  <h1 class="lt-titulo me-auto">Conductores</h1>
+  <h1 class="lt-titulo">Conductores</h1>
+  <!-- Mejora: total de conductores registrados -->
+  <span class="badge text-bg-light border me-auto">{{ totalElementos() }} conductores en total</span>
   <div class="input-group" style="width: min(280px, 100%)">
     <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
     <input class="form-control" placeholder="Buscar por nombre o DNI..." aria-label="Buscar por nombre o DNI"

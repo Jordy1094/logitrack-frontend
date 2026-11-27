@@ -4,7 +4,6 @@ import { AuthService } from './core/auth.service';
 import { SidebarComponent } from './shared/sidebar.component';
 import { ToastContainerComponent } from './shared/toast-container.component';
 
-
 // AppComponent (Tabla 7): contiene el menu lateral y el area donde se cargan las pantallas.
 @Component({
   selector: 'app-root',
@@ -64,5 +63,4 @@ export class AppComponent {
   cerrarEnMovil(): void {
     if (window.innerWidth < 768) { this.menuColapsado.set(true); }
   }
-  
 }

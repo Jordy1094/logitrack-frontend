@@ -21,7 +21,6 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/drivers/driver-list.component').then(m => m.DriverListComponent)
   },
   {
-    
     path: 'rutas/nueva',
     canActivate: [roleGuard(['ADMINISTRADOR', 'SUPERVISOR'])],
     loadComponent: () => import('./pages/route-form/route-form.component').then(m => m.RouteFormComponent)
@@ -31,4 +30,3 @@ export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
   { path: '**', redirectTo: 'dashboard' }
 ];
-
